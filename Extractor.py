@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F 
 
-class Residual(nn.Module):
+class BasciBlock(nn.Module):
     def __init__(self, input_channel, output_channel, use_1x1conv=False,
                  stride=1) -> None:
         super().__init__()
@@ -28,7 +28,7 @@ class Residual(nn.Module):
     
 class GC_Extractor(nn.Module):
     def __init__(self, input_channel, output_channel, num_resblock) -> None:
-        super(GC_Extractor, self).__init__()
+        super().__init__()
         self.conv_in = nn.Conv2d(in_channels=input_channel, out_channels=output_channel, kernel_size=5, padding=2, stride=2)
         self.bn_in = nn.BatchNorm2d(output_channel)
         self.resblock = self._make_layer(num_channel=output_channel, num_resblock=num_resblock)
@@ -37,7 +37,7 @@ class GC_Extractor(nn.Module):
     def _make_layer(self, num_channel, num_resblock):
         resblk = []
         for i in range(num_resblock):
-            resblk.append(Residual(num_channel, num_channel))
+            resblk.append(BasciBlock(num_channel, num_channel))
         return nn.Sequential(*resblk)    
     
     def forward(self, x):
