@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 from torch.nn import functional as F 
+import math
+
 from GCNet.Extractor import GC_Extractor
 from GCNet.EncoderDecoder import Hourglass
 
@@ -10,7 +12,6 @@ class GCNet(nn.Module):
         super().__init__()
         self.device = device
         self.fea1 = nn.Sequential( GC_Extractor(3, 32, 8) )
-        self.fea2 = nn.Sequential( GC_Extractor(3, 32, 8) )
         self.hourglass = nn.Sequential( Hourglass() )
 
 
@@ -37,15 +38,30 @@ class GCNet(nn.Module):
         disp = torch.sum(vec*cost_softmax, dim=2)
         return disp
     
+    def __init_params(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.Conv3d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.kernel_size[2] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.bias.data.zero_()    
+
     def forward(self, imgL, imgR, min_disp, max_disp):
         #extract feature map
         featureL = self.fea1(imgL)
-        featureR = self.fea2(imgR)
-        print(featureL.shape, featureR.shape)
+        featureR = self.fea1(imgR)
 
         # construct cost volume
         cost_vol = self.cost_volume(featureL, featureR, min_disp, max_disp) # B * 2C * maxdisp-mindisp * H * W
-        print(cost_vol.shape)
 
         # cost filtering
         cost_vol = self.hourglass(cost_vol)
