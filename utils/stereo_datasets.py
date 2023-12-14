@@ -1,5 +1,6 @@
 import torch
 import torch.utils.data as data
+from torchvision import transforms
 
 import numpy as np
 import logging
@@ -27,19 +28,21 @@ class StereoDataset(data.Dataset):
         
         img1 = read_img(self.image_list[index][0], self.resize)
         img2 = read_img(self.image_list[index][1], self.resize)
-        img1 = torch.from_numpy(img1).permute(2, 0, 1).float()
-        img2 = torch.from_numpy(img2).permute(2, 0, 1).float()
+        
+        img1 = img_norm(img1)
+        img2 = img_norm(img2)
+
         if self.is_test:
             return img1, img2
-        disp, valid = read_disp(self.disparity_list[index], self.resize)
+        
+        disp, valid = read_disp_dfc(self.disparity_list[index], self.resize)
         disp = torch.from_numpy(disp).float()
-        valid = torch.from_numpy(valid).int()
+        valid = torch.from_numpy(valid).bool()
 
         return img1, img2, disp, valid
     
     def __len__(self):
         return len(self.image_list)
-    
     
 class DFC2019(StereoDataset):
     def __init__(self, root, resize, image_set='training'):

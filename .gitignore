@@ -1,1 +1,4 @@
 __pycache__
+training_checkpoints*
+demo_output
+img
