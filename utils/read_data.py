@@ -15,7 +15,7 @@ from PIL import Image
 
 def read_img(filename, resize):
     ext = os.path.splitext(filename)[-1]
-    if ext == '.png' or ext == '.jpeg' or ext == '.jpg' or ext == '.tif':
+    if ext == '.png' or ext == '.jpeg' or ext == '.jpg' or ext == '.tif' or ext == ".tiff":
         img = Image.open(filename)
         w, h = img.size
         if resize[0] != w:
@@ -42,6 +42,27 @@ def read_disp_dfc(filename, resize):
 
     # generate mask
     valid = (disp != 0)
+    # valid = np.ones_like(disp)
+    return disp, valid
+
+
+def read_disp_whu(filename, resize):
+    '''
+    @para: resize -> [w, h]
+    '''
+    disp = Image.open(filename)
+    w, h = disp.size
+    if resize[0] != w:
+        disp = disp.resize(resize)
+    disp = np.array(disp)
+
+    # generate mask
+    valid = (disp != -999)
+
+    # img has been resized, thus the disparity should resized
+    if resize[0] != w:
+        scale = w/resize[0]
+        disp = disp / scale
     # valid = np.ones_like(disp)
     return disp, valid
 

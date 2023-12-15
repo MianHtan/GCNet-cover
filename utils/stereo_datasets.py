@@ -13,7 +13,7 @@ from .read_data import *
 
 
 class StereoDataset(data.Dataset):
-    def __init__(self, resize):    
+    def __init__(self, resize, disp_reader):    
 
         self.is_test = False
         self.init_seed = False
@@ -21,6 +21,7 @@ class StereoDataset(data.Dataset):
         self.image_list = []
         self.extra_info = []
         self.resize = resize
+        self.dispreader = disp_reader
 
     def __getitem__(self, index):
 
@@ -35,7 +36,7 @@ class StereoDataset(data.Dataset):
         if self.is_test:
             return img1, img2
         
-        disp, valid = read_disp_dfc(self.disparity_list[index], self.resize)
+        disp, valid = self.dispreader(self.disparity_list[index], self.resize)
         disp = torch.from_numpy(disp).float()
         valid = torch.from_numpy(valid).bool()
 
@@ -46,7 +47,7 @@ class StereoDataset(data.Dataset):
     
 class DFC2019(StereoDataset):
     def __init__(self, root, resize, image_set='training'):
-        super().__init__(resize)
+        super().__init__(resize=resize, disp_reader=read_disp_dfc)
         assert os.path.exists(root)
 
         image1_list = sorted(glob(os.path.join(root, 'Track2-RGB-*/*LEFT_RGB.tif')))
@@ -67,16 +68,45 @@ class DFC2019(StereoDataset):
             self.image_list += [[img1, img2]]
             self.disparity_list += [disp]
 
+class WHUStereo(StereoDataset):
+    def __init__(self, root, resize, image_set='training'):
+        super().__init__(resize=resize, disp_reader=read_disp_whu)
+        assert os.path.exists(root)
+
+        if image_set == "training":
+            image1_list = sorted(glob(os.path.join(root, 'train/left/*.tiff')))
+            image2_list = sorted(glob(os.path.join(root, 'train/right/*.tiff')))
+            disp_list = sorted(glob(os.path.join(root, 'train/disp/*.tiff')))
+
+        if image_set == "testing":
+            image1_list = sorted(glob(os.path.join(root, 'test/left/*.tiff')))
+            image2_list = sorted(glob(os.path.join(root, 'test/right/*.tiff')))
+            disp_list = sorted(glob(os.path.join(root, 'test/disp/*.tiff')))
+
+        for idx, (img1, img2, disp) in enumerate(zip(image1_list, image2_list, disp_list)):
+            self.image_list += [[img1, img2]]
+            self.disparity_list += [disp]
+
+
 def fetch_dataset(dataset_name, root, batch_size, resize, mode="training"):
+    
     if dataset_name == 'DFC2019':
         if mode == 'training':
             dataset = DFC2019(root=root, resize = resize,
                             image_set='training')
         elif mode == 'testing':
             dataset = DFC2019(root=root, resize = resize,
-                            image_set='testing')
+                            image_set='testing')     
+    elif dataset_name == 'WHUStereo':
+        if mode == 'training':
+            dataset = WHUStereo(root=root, resize = resize,
+                            image_set='training')
+        elif mode == 'testing':
+            dataset = WHUStereo(root=root, resize = resize,
+                            image_set='testing')     
     else: 
         print("no such a dataset")
+
     train_loader = data.DataLoader(dataset = dataset, batch_size=batch_size,
                                    pin_memory=True, shuffle=True,
                                    num_workers=int(os.environ.get('SLURM_CPUS_PER_TASK', 6)) - 2, drop_last=True)

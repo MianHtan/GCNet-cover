@@ -1,8 +1,12 @@
 # GCNet for satellite
-This is a non-official pytorch implementation of stereo matching network GCNet <https://arxiv.org/abs/1703.04309>
+This is a non-official pytorch implementation of stereo matching network <a href="https://arxiv.org/abs/1703.04309">GCNet</a> and make a slight modification to adapt it to satellite image
 ### Differences from original paper
 - In order to make the model applicable to satellite images, the option of minimum disparity was added to adapt it to negative disparity
-- Add code to train on DFC2019 dataset
+- Using OneCycleLR to adjust the learning rate
+
+### Dataset
+The dataloader only support DFC2019 and WHU-Stereo dataset, the dataset was preprocessed to 8 bits <br />
+You can train the model by using `train.py`
 
 ### Environment
 - torch                     2.1.1
