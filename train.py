@@ -10,7 +10,8 @@ from GCNet.GCNet import GCNet
 
 def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_lr, resize, device, save_frequency=None, require_validation=False, pretrain = None):
     print("Train on:", device)
-
+    Path("training_checkpoints").mkdir(exist_ok=True, parents=True)
+    
     # define model
     net.to(device)
     if pretrain is not None:
@@ -95,26 +96,24 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
                 break
 
         if len(train_loader) >= 1000:
-            cur_iter = int((total_steps-1)/steps_per_iter)
+            cur_iter = int(total_steps/steps_per_iter)
             save_path = Path('training_checkpoints/%d_epoch_%s.pth' % (cur_iter, 'GCNet_DFC2019'))
             torch.save(net.state_dict(), save_path)
 
     print("FINISHED TRAINING")
 
-    PATH = 'training_checkpoints/GCNet_DFC2019.pth'
-    torch.save(net.state_dict(), PATH)
-    print("model has been save to path: ", PATH)
+    final_outpath = f'training_checkpoints/GCNet_{dataset_name}.pth'
+    torch.save(net.state_dict(), final_outpath)
+    print("model has been save to path: ", final_outpath)
 
 if __name__ == '__main__':
-    Path("training_checkpoints").mkdir(exist_ok=True, parents=True)
+    
 
     device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
     net = GCNet()
-    net._init_params()
-    net = net.to(device)
 
-    # training set keyword: 'DFC2019', 'WHUStereo'
+    # training set keywords: 'DFC2019', 'WHUStereo'
     # '/home/lab1/datasets/DFC2019_track2_grayscale_8bit'
     # '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth'
     train(net=net, dataset_name='WHUStereo', root = '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth', 

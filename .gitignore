@@ -3,3 +3,4 @@ training_checkpoints*
 demo_output
 img
 notebook.ipynb
+log.txt
