@@ -71,7 +71,7 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
                 # load data 
                 if require_validation:
                     print("--- start validation ---")
-                    test_loader = fetch_dataset(dataset_name = dataset_name, root = '/home/lab1/datasets/DFC2019_track2_grayscale_8bit',
+                    test_loader = fetch_dataset(dataset_name = dataset_name, root = root,
                                     batch_size = batch_size, resize = resize, mode = 'testing')
                     
                     net.eval()
@@ -97,7 +97,7 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
 
         if len(train_loader) >= 1000:
             cur_iter = int(total_steps/steps_per_iter)
-            save_path = Path('training_checkpoints/%d_epoch_%s.pth' % (cur_iter, 'GCNet_DFC2019'))
+            save_path = Path('training_checkpoints/%d_epoch_%s.pth' % (cur_iter, dataset_name))
             torch.save(net.state_dict(), save_path)
 
     print("FINISHED TRAINING")
@@ -117,6 +117,6 @@ if __name__ == '__main__':
     # '/home/lab1/datasets/DFC2019_track2_grayscale_8bit'
     # '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth'
     train(net=net, dataset_name='WHUStereo', root = '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth', 
-          batch_size=1, min_disp=-32, max_disp=64, iters=5, init_lr=0.0002,
+          batch_size=1, min_disp=-32, max_disp=64, iters=3, init_lr=0.0001,
           resize = [1024,1024], save_frequency = 500, require_validation=False, 
-          device=device, pretrain="training_checkpoints/2_epoch_GCNet_DFC2019.pth")
+          device=device, pretrain="checkpoints/7_epoch_GCNet_DFC2019.pth")

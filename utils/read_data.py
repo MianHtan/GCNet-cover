@@ -57,7 +57,7 @@ def read_disp_whu(filename, resize):
     disp = np.array(disp)
 
     # generate mask
-    valid = (disp != -999)
+    valid = (disp > -128)
 
     # img has been resized, thus the disparity should resized
     if resize[0] != w:
