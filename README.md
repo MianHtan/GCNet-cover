@@ -8,6 +8,15 @@ This is a non-official pytorch implementation of stereo matching network <a href
 The dataloader only support `DFC2019` and `WHU-Stereo` dataset, the dataset was preprocessed to 8 bits <br />
 You can train the model by using `train.py`
 
+```
+python train.py
+```
+You can use tensorboard to monitoring the loss and learning rate during training.
+
+```
+tensorboard --logdir ./logs
+```
+
 ### Environment
 - torch                     2.1.1
 - torchvision               0.16.1

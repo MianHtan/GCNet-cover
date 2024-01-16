@@ -103,7 +103,14 @@ def fetch_dataset(dataset_name, root, batch_size, resize, mode="training"):
                             image_set='training')
         elif mode == 'testing':
             dataset = WHUStereo(root=root, resize = resize,
-                            image_set='testing')     
+                            image_set='testing') 
+    elif dataset_name == "all":
+        if mode == 'training':
+            dataset = DFC2019(root= '/home/lab1/datasets/DFC2019_track2_grayscale_8bit', resize = resize, image_set='training')
+            dataset += WHUStereo(root='/home/lab1/datasets/whu_stereo_8bit/with_ground_truth', resize = resize, image_set='training')
+        elif mode == 'testing':
+            dataset = DFC2019(root='/home/lab1/datasets/DFC2019_track2_grayscale_8bit', resize = resize, image_set='testing')
+            dataset += WHUStereo(root='/home/lab1/datasets/whu_stereo_8bit/with_ground_truth', resize = resize, image_set='testing')         
     else: 
         print("no such a dataset")
 

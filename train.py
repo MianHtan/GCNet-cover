@@ -1,9 +1,13 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 from tqdm import tqdm
 from pathlib import Path
+
+
+
 
 from utils.stereo_datasets import fetch_dataset
 from GCNet.GCNet import GCNet
@@ -11,7 +15,10 @@ from GCNet.GCNet import GCNet
 def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_lr, resize, device, save_frequency=None, require_validation=False, pretrain = None):
     print("Train on:", device)
     Path("training_checkpoints").mkdir(exist_ok=True, parents=True)
-    
+
+    # tensorboard log file
+    writer = SummaryWriter(log_dir='logs')
+
     # define model
     net.to(device)
     if pretrain is not None:
@@ -22,7 +29,7 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
         print("Model parameters has been random initialize!")
     net.train()
 
-    # fetch data
+    # fetch traning data
     train_loader = fetch_dataset(dataset_name = dataset_name, root = root,
                                 batch_size = batch_size, resize = resize, mode = 'training')
     
@@ -30,14 +37,14 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
     num_steps = steps_per_iter * iters    
     
     print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in net.parameters()])))
+    # initialize the optimizer and lr scheduler
     optimizer = torch.optim.AdamW(net.parameters(), lr=init_lr)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, init_lr*2, num_steps + 100,
                                               pct_start=0.01, cycle_momentum=False, anneal_strategy='linear')
-        
+    
     criterion = nn.SmoothL1Loss().to(device)
 
-
-
+    # start traning
     should_keep_training = True
     total_steps = 0
     while should_keep_training:
@@ -57,18 +64,13 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
             optimizer.step()
             scheduler.step()
 
-            # torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-
-            # code of validation (on working)
-
+            # code of validation
             if total_steps % save_frequency == (save_frequency - 1):
-                print("--- save checkpoint ---")
-
                 # save checkpoints
                 save_path = Path('training_checkpoints/%dsteps_GCNet_%s.pth' % (total_steps + 1, dataset_name))
                 torch.save(net.state_dict(), save_path)
 
-                # load data 
+                # load validation data 
                 if require_validation:
                     print("--- start validation ---")
                     test_loader = fetch_dataset(dataset_name = dataset_name, root = root,
@@ -83,12 +85,14 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
                             disp_predictions = disp_predictions.squeeze(1)
                             val_loss += criterion(disp_predictions[valid], disp_gt[valid])
                         val_loss = val_loss / (test_loader.__len__() * batch_size)
-                        print(f"--- after {total_steps + 1} steps vaildation loss: {val_loss:.7f} ---")
+                        
+                        writer.add_scalar(tag="vaildation loss", scalar_value=val_loss, global_step=total_steps+1)
 
                 net.train()
-            #     # logger.write_dict(results)
-            #     net.train()
-            print(f"step{total_steps} loss: {loss:.7f} lr: {scheduler.get_last_lr()[0]}")
+            
+            # write loss and lr to log
+            writer.add_scalar(tag="training loss", scalar_value=loss, global_step=total_steps+1)
+            writer.add_scalar(tag="lr", scalar_value=scheduler.get_last_lr()[0], global_step=total_steps+1)
             total_steps += 1
 
             if total_steps > num_steps:
@@ -97,7 +101,7 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
 
         if len(train_loader) >= 1000:
             cur_iter = int(total_steps/steps_per_iter)
-            save_path = Path('training_checkpoints/%d_epoch_%s.pth' % (cur_iter, dataset_name))
+            save_path = Path('training_checkpoints/%d_epoch_GCNet_%s.pth' % (cur_iter, dataset_name))
             torch.save(net.state_dict(), save_path)
 
     print("FINISHED TRAINING")
@@ -113,10 +117,10 @@ if __name__ == '__main__':
 
     net = GCNet()
 
-    # training set keywords: 'DFC2019', 'WHUStereo'
+    # training set keywords: 'DFC2019', 'WHUStereo', 'all'
     # '/home/lab1/datasets/DFC2019_track2_grayscale_8bit'
     # '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth'
-    train(net=net, dataset_name='WHUStereo', root = '/home/lab1/datasets/whu_stereo_8bit/with_ground_truth', 
+    train(net=net, dataset_name='DFC2019', root = '/home/lab1/datasets/DFC2019_track2_grayscale_8bit', 
           batch_size=1, min_disp=-32, max_disp=64, iters=3, init_lr=0.0001,
-          resize = [1024,1024], save_frequency = 500, require_validation=False, 
+          resize = [1024,1024], save_frequency = 2000, require_validation=False, 
           device=device, pretrain="checkpoints/7_epoch_GCNet_DFC2019.pth")
