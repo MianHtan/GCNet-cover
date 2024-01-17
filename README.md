@@ -5,7 +5,7 @@ This is a non-official pytorch implementation of stereo matching network <a href
 - Using OneCycleLR to adjust the learning rate
 
 ### Dataset
-The dataloader only support `DFC2019` and `WHU-Stereo` dataset, the dataset was preprocessed to 8 bits <br />
+The dataloader only support `DFC2019` and `WHU-Stereo` dataset, the dataset need to be preprocessed to 8 bits <br />
 You can train the model by using `train.py`
 
 ```

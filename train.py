@@ -86,7 +86,7 @@ def train(net, dataset_name, batch_size, root, min_disp, max_disp, iters, init_l
                             val_loss += criterion(disp_predictions[valid], disp_gt[valid])
                         val_loss = val_loss / (test_loader.__len__() * batch_size)
                         
-                        writer.add_scalar(tag="vaildation loss", scalar_value=val_loss, global_step=total_steps+1)
+                    writer.add_scalar(tag="vaildation loss", scalar_value=val_loss, global_step=total_steps+1)
 
                 net.train()
             
